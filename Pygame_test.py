@@ -57,9 +57,9 @@ def main():
     Tour = 'White'
     # print(Tour + 's turn')
     Tour_bot = []
-    # Tour_bot = ['Black']
+    Tour_bot = ["White",'Black']
     Win = False
-    DEPTH = 2
+    DEPTH = 3
     while running:
         if not Win:
             if Tour in Tour_bot:
