@@ -93,7 +93,7 @@ class Bot():
 
     def Exploration(self, board:object, Depth):
         
-        if board.can_claim_threefold_repetition() or board.can_claim_fifty_moves():
+        if board.is_fivefold_repetition():
             return -1, 0
         if board.is_insufficient_material():
             return -1, 0

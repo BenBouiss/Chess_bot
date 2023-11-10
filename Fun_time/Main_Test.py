@@ -10,7 +10,7 @@ stockfish = Stockfish(path=f"{os.getcwd()}/Stockfish/stockfish/src/stockfish")
 print(os.getcwd())
 
 fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0"
-bot = Evaluation_part.Bot(DEPTH_max=3, Use_transposition = True)
+bot = Evaluation_part.Bot(DEPTH_max=3, Use_transposition = False)
 #bot.Exploration(Board_fen=fen, Depth = 2)
 board = chess.Board(fen)
 
@@ -29,10 +29,12 @@ while running:
     if move == None:
         running = False
         break
-    board.push(move)
+    if type(move) == int:
+        running = False
+    else:
+        board.push(move)
     #clear()
     stockfish.set_fen_position(board.fen())
-    print("Ben")
     stockfish_valid = stockfish.get_evaluation()['value']
     os.system('clear')
     print(f"Choice : {move} with estimation of : {point}, after : {round(time.time() - Start, 2)} s at depth = {depth}")
