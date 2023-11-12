@@ -5,8 +5,8 @@ import os
 from stockfish import Stockfish
 
 clear = lambda: os.system('clear')
-stockfish = Stockfish(path=f"{os.getcwd()}/Stockfish/stockfish/src/stockfish")
-
+#stockfish = Stockfish(path=f"{os.getcwd()}/Stockfish/stockfish/src/stockfish")
+stockfish = Stockfish(path=f"{os.getcwd()}/Stockfish/stockfish/stockfish-windows-x86-64-modern.exe")
 print(os.getcwd())
 
 fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0"
@@ -16,8 +16,8 @@ board = chess.Board(fen)
 
 Testing = True
 running = True
-depth = 3
-min_depth = 3
+depth = 2
+min_depth = 2
 
 while running:
     Start = time.time()
