@@ -6,24 +6,26 @@ from stockfish import Stockfish
 
 clear = lambda: os.system('clear')
 #stockfish = Stockfish(path=f"{os.getcwd()}/Stockfish/stockfish/src/stockfish")
-stockfish = Stockfish(path=f"{os.getcwd()}/Stockfish/stockfish/stockfish-windows-x86-64-modern.exe")
+path=f"{os.getcwd()}/Stockfish/stockfish/src/stockfish"
+stockfish = Stockfish(path = path)
 print(os.getcwd())
 
 fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0"
-bot = Evaluation_part.Bot(DEPTH_max=3, Use_transposition = False)
+bot = Evaluation_part.Bot(DEPTH_max=4, Use_transposition = False)
 #bot.Exploration(Board_fen=fen, Depth = 2)
 board = chess.Board(fen)
 
 Testing = True
 running = True
 depth = 2
-min_depth = 2
+min_depth = 3
+MAX_DEPTH = 4
 
 while running:
     Start = time.time()
     move, point = bot.Exploration(board=board, Depth = depth)
     if time.time() - Start < 1:
-        depth = min(depth+1, 3)
+        depth = min(depth+1, MAX_DEPTH)
     else:
         depth = max(min_depth, depth-1)
     if move == None:

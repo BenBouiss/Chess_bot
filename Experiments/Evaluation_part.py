@@ -1,6 +1,7 @@
 import numpy as np
 import time
 import chess
+import random
 PIECES = {'q' : 900, 'r' : 500, 'b' : 400, 'n' : 400, 'p' : 100}
 
 PIECE_SPACE = {
@@ -54,6 +55,8 @@ PIECE_SPACE = {
             17,  30,  -3, -14,   6,  -1,  40,  18),
 }
 
+CHECKMATE = 99999
+
 Transposition_table = {}
 '''
 Transposition_table: dict
@@ -93,6 +96,28 @@ class Bot():
 
     def Exploration(self, board:object, Depth):
         
+        global Counter_min_max, Counter_alpha_beta
+        Counter_min_max, Counter_alpha_beta = 0, 0
+        
+        self.DEPTH_MAX = Depth
+        min_max = False
+        if min_max:
+            move_min_max, point_min_max = self.Exploration_min_max(board, Depth)
+            point_min_max = point_min_max *(-1 if not board.turn else 1)
+        
+        alpha = -CHECKMATE
+        beta = CHECKMATE
+        move_alpha_beta, point_alpha_beta = self.Exploration_alpha_beta(board, Depth, alpha, beta)
+        point_alpha_beta = point_alpha_beta *(-1 if not board.turn else 1)
+        
+        #print(f'Min max:\nAfter : {Counter_min_max} branches, Scores : {point_min_max}, Bestmove : {move_min_max}')
+        print(f'Alpha beta:\nAfter : {Counter_alpha_beta} branches, Scores : {point_alpha_beta}, Bestmove : {move_alpha_beta}')
+        #input()
+        return move_alpha_beta, point_alpha_beta
+    
+    def Exploration_min_max(self, board:object, Depth):
+        global Counter_min_max
+        Counter_min_max+=1
         if board.is_fivefold_repetition():
             return -1, 0
         if board.is_insufficient_material():
@@ -104,43 +129,133 @@ class Bot():
             if extract in Transposition_table:
                 if Transposition_table[extract][2]+1 >= Depth:
                     self.Accessed_table_counter +=1
-                    return Transposition_table[extract][:2]
+                    return Transposition_table[extract][0], -Transposition_table[extract][1]
         
         if Depth == 0:
-            return None, self.Evaluate(board.fen())
+            return None,  self.Evaluate(board.fen())
         
         #print(board)
         #print(list(board.generate_legal_moves()))
         All_moves = list(board.generate_legal_moves())
+        random.shuffle(All_moves)
         Move_points = []
+        Max_score = -CHECKMATE
         for move in All_moves:
             board.push(move)
-            mv, Point = self.Exploration(board, Depth -1)
+            mv, Point = self.Exploration_min_max(board, Depth -1)
+            flag = 1
+            if Depth != 1 or (Depth == 1 and board.turn):
+                flag = -1
+                Point= Point * (-1)
             board.pop()
             Move_points.append(Point)
+
+            if Point > Max_score:
+                Max_score = Point
+                Best_move = move
         
         if len(Move_points) == 0:
             if board.outcome().winner == True:
-                return -1, 99999
+                return -1, -CHECKMATE
             elif board.outcome().winner == False:
-                return -1, -99999
+                return -1, CHECKMATE
             return -1, 0
         
-        
-        if board.turn:
-            mask = np.array(Move_points) == max(Move_points)
-        else:
-            mask = np.array(Move_points) == min(Move_points)
+        #if Depth == self.DEPTH_MAX:
+        #    print(f'For depth = {Depth} {board.turn} {flag}\nAll moves : {All_moves}\nAll scores : {Move_points}' )
+        #    input()
+            
+        #if Depth != 0:
+        #    print(f'For depth = {Depth} {board.turn} {not board.turn} {flag}\nAll moves : {All_moves}\nAll scores : {Move_points}' )
+        #    input()
+#        if board.turn:
+#            mask = np.array(Move_points) == max(Move_points)
+#        else:
+#            mask = np.array(Move_points) == min(Move_points)
 
-        selected_moves = np.array(All_moves)[mask]
-        Best_move = np.random.choice(selected_moves)
+#        selected_moves = np.array(All_moves)[mask]
+#        Best_move = np.random.choice(selected_moves)
         
         if self.Use_transposition:
             if not extract in Transposition_table:
-                Transposition_table[extract] = (Best_move, max(np.array(Move_points)[mask]), Depth)
+                Transposition_table[extract] = (Best_move, Max_score, Depth)
             elif extract in Transposition_table:
                 if Transposition_table[extract][2] <= Depth:
-                    Transposition_table[extract] = (Best_move, max(np.array(Move_points)[mask]), Depth)
-        return Best_move, max(np.array(Move_points)[mask]) 
+                    Transposition_table[extract] = (Best_move, Max_score, Depth)
+        return Best_move, Max_score 
+    
+    def Exploration_alpha_beta(self, board:object, Depth, alpha, beta):
+        global Counter_alpha_beta
+        Counter_alpha_beta+=1
+        if board.is_fivefold_repetition():
+            return -1, 0
+        if board.is_insufficient_material():
+            return -1, 0
+        
+        if self.Use_transposition:
+            fen = board.fen()
+            extract = (" ").join(fen.split(' ')[0:2])
+            if extract in Transposition_table:
+                if Transposition_table[extract][2]+1 >= Depth:
+                    self.Accessed_table_counter +=1
+                    return Transposition_table[extract][0], -Transposition_table[extract][1]
+        
+        if Depth == 0:
+            return None,  self.Evaluate(board.fen())
+        
+        #print(board)
+        #print(list(board.generate_legal_moves()))
+        All_moves = list(board.generate_legal_moves())
+        random.shuffle(All_moves)
+        Move_points = []
+        Max_score = -CHECKMATE
+        if len(All_moves)!=0:
+            Best_move = All_moves[0]
+        for move in All_moves:
+            board.push(move)
+            mv, Point = self.Exploration_alpha_beta(board, Depth -1, -beta, -alpha)
+            flag = 1
+            if Depth != 1 or (Depth == 1 and board.turn):
+                flag = -1
+                Point= Point * (-1)
+            board.pop()
+            Move_points.append(Point)
 
+            if Point >= Max_score:
+                Max_score = Point
+                Best_move = move
+                
+            if Max_score > alpha:
+                alpha = Max_score
+            if alpha >= beta:
+                break
+            
+        if len(Move_points) == 0:
+            if board.outcome().winner == True:
+                return -1, -CHECKMATE
+            elif board.outcome().winner == False:
+                return -1, CHECKMATE
+            return -1, 0
+        
+        #if Depth == self.DEPTH_MAX:
+        #    print(f'For depth = {Depth} {board.turn} {flag}\nAll moves : {All_moves}\nAll scores : {Move_points}' )
+        #    input()
+            
+        #if Depth != 0:
+        #    print(f'For depth = {Depth} {board.turn} {not board.turn} {flag}\nAll moves : {All_moves}\nAll scores : {Move_points}' )
+        #    input()
+#        if board.turn:
+#            mask = np.array(Move_points) == max(Move_points)
+#        else:
+#            mask = np.array(Move_points) == min(Move_points)
 
+#        selected_moves = np.array(All_moves)[mask]
+#        Best_move = np.random.choice(selected_moves)
+        
+        if self.Use_transposition:
+            if not extract in Transposition_table:
+                Transposition_table[extract] = (Best_move, Max_score, Depth)
+            elif extract in Transposition_table:
+                if Transposition_table[extract][2] <= Depth:
+                    Transposition_table[extract] = (Best_move, Max_score, Depth)
+        return Best_move, Max_score 
