@@ -55,7 +55,7 @@ PIECE_SPACE = {
             17,  30,  -3, -14,   6,  -1,  40,  18),
 }
 
-CHECKMATE = 99999
+CHECKMATE = 999999
 
 Transposition_table = {}
 '''
@@ -79,18 +79,21 @@ class Bot():
         if name in PIECES:
             if string.islower():
                 index = 63 - index
+            #print(index, PIECE_SPACE[name])
             return (PIECES[name]+PIECE_SPACE[name][index]) * (-1 if string.islower() else 1)
         else:
             return 0
         
     def Evaluate(self, Board_fen:str):
+        # fen ex : "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0"
         point = 0
         offset = 0
         for ind, case in enumerate(Board_fen.split(' ')[0]):
             if case.isnumeric():
-                offset=int(case)
+                offset+=int(case) -1
             elif case == "/":
-                offset=0
+                offset+=-1
+            #print(case, ind, offset)
             point += self.Point_fn(case, index=ind + offset)
         return point
 
@@ -132,7 +135,7 @@ class Bot():
                     return Transposition_table[extract][0], -Transposition_table[extract][1]
         
         if Depth == 0:
-            return None,  self.Evaluate(board.fen())
+            return None, self.Evaluate(board.fen())
         
         #print(board)
         #print(list(board.generate_legal_moves()))
@@ -150,15 +153,15 @@ class Bot():
             board.pop()
             Move_points.append(Point)
 
-            if Point > Max_score:
+            if Point >= Max_score:
                 Max_score = Point
                 Best_move = move
         
         if len(Move_points) == 0:
             if board.outcome().winner == True:
-                return -1, -CHECKMATE
-            elif board.outcome().winner == False:
                 return -1, CHECKMATE
+            elif board.outcome().winner == False:
+                return -1, -CHECKMATE
             return -1, 0
         
         #if Depth == self.DEPTH_MAX:
@@ -181,7 +184,7 @@ class Bot():
                 Transposition_table[extract] = (Best_move, Max_score, Depth)
             elif extract in Transposition_table:
                 if Transposition_table[extract][2] <= Depth:
-                    Transposition_table[extract] = (Best_move, Max_score, Depth)
+                    Transposition_table[extract] = (Best_move, Max_score * (-1 if not board.turn else 1), Depth)
         return Best_move, Max_score 
     
     def Exploration_alpha_beta(self, board:object, Depth, alpha, beta):
@@ -198,6 +201,11 @@ class Bot():
             if extract in Transposition_table:
                 if Transposition_table[extract][2]+1 >= Depth:
                     self.Accessed_table_counter +=1
+                    board.push(Transposition_table[extract][0])
+                    if board.is_fivefold_repetition() or board.is_insufficient_material():
+                        board.pop()
+                        return -1, 0
+                    board.pop()
                     return Transposition_table[extract][0], -Transposition_table[extract][1]
         
         if Depth == 0:
@@ -208,6 +216,7 @@ class Bot():
         All_moves = list(board.generate_legal_moves())
         random.shuffle(All_moves)
         Move_points = []
+        Explored_moves = []
         Max_score = -CHECKMATE
         if len(All_moves)!=0:
             Best_move = All_moves[0]
@@ -220,7 +229,7 @@ class Bot():
                 Point= Point * (-1)
             board.pop()
             Move_points.append(Point)
-
+            Explored_moves.append(move)
             if Point >= Max_score:
                 Max_score = Point
                 Best_move = move
@@ -232,14 +241,14 @@ class Bot():
             
         if len(Move_points) == 0:
             if board.outcome().winner == True:
-                return -1, -CHECKMATE
-            elif board.outcome().winner == False:
                 return -1, CHECKMATE
+            elif board.outcome().winner == False:
+                return -1, -CHECKMATE
             return -1, 0
         
-        #if Depth == self.DEPTH_MAX:
-        #    print(f'For depth = {Depth} {board.turn} {flag}\nAll moves : {All_moves}\nAll scores : {Move_points}' )
-        #    input()
+        if Depth == self.DEPTH_MAX and Depth >=5:
+            print(f'For depth = {Depth} {board.turn} {flag}\nAll moves : {Explored_moves}\nAll scores : {Move_points}' )
+            input()
             
         #if Depth != 0:
         #    print(f'For depth = {Depth} {board.turn} {not board.turn} {flag}\nAll moves : {All_moves}\nAll scores : {Move_points}' )
