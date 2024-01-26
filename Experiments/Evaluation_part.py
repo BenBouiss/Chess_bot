@@ -206,7 +206,7 @@ class Bot():
                         board.pop()
                         return -1, 0
                     board.pop()
-                    return Transposition_table[extract][0], -Transposition_table[extract][1]
+                    return Transposition_table[extract][0], Transposition_table[extract][1]
         
         if Depth == 0:
             return None,  self.Evaluate(board.fen())
@@ -224,8 +224,7 @@ class Bot():
             board.push(move)
             mv, Point = self.Exploration_alpha_beta(board, Depth -1, -beta, -alpha)
             flag = 1
-            if Depth != 1 or (Depth == 1 and board.turn):
-                flag = -1
+            if Depth != 1:
                 Point= Point * (-1)
             board.pop()
             Move_points.append(Point)
@@ -266,5 +265,5 @@ class Bot():
                 Transposition_table[extract] = (Best_move, Max_score, Depth)
             elif extract in Transposition_table:
                 if Transposition_table[extract][2] <= Depth:
-                    Transposition_table[extract] = (Best_move, Max_score, Depth)
+                    Transposition_table[extract] = (Best_move, Max_score* (-1 if not board.turn else 1), Depth)
         return Best_move, Max_score 
